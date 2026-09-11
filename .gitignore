@@ -5,6 +5,7 @@
 *.local
 *.local.*
 .wrangler/
+.local/
 credentials*.json
 session*.json
 

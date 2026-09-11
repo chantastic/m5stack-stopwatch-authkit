@@ -14,7 +14,7 @@ The chan.dev backend is maintained separately and is **not included here**. Buil
 
 ## Hardware and controls
 
-Designed for the M5Stack StopWatch with an ESP32-S3, 16 MiB flash, 8 MiB PSRAM, and a 468 × 468 round touchscreen.
+Designed for the M5Stack StopWatch with an ESP32-S3, 16 MiB flash, and 8 MiB PSRAM. The driver uses a 468 × 468 drawing surface for the nominal 466 × 466 round AMOLED panel; see the [hardware reference](docs/hardware.md) and its manufacturer links.
 
 | Control | Action |
 | --- | --- |
@@ -58,6 +58,13 @@ The normal component upload preserves this firmware's saved device settings and 
 Once saved, badges remain available through an internet outage. Settings distinguishes saved offline data from a current authenticated connection. Refresh runs after startup and when requested; a successful check does not start continuous provider polling.
 
 ## Development
+
+Project memory is kept alongside the source:
+
+- [Hardware reference](docs/hardware.md): exact board, display, buttons, orientation, memory, and USB behavior.
+- [Decisions and lessons](docs/decisions.md): user preferences, integration setup, and fixes worth preserving.
+- [Development guide](docs/development.md): build, flash, verify, diagnose, and recover.
+- [AGENTS.md](AGENTS.md): the starting point for future coding sessions.
 
 The sketch is in [`firmware/devices_badge`](firmware/devices_badge). Most changes belong in its focused headers: profile fetching, persistent storage, background HTTP, button gestures, orientation, and badge rendering.
 
