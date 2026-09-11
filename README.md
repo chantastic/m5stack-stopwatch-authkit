@@ -2,7 +2,7 @@
 
 A connected profile badge for the **M5Stack StopWatch**, using WorkOS AuthKit and Pipes through chan.dev. Sign in on your phone, connect your accounts, and wear a badge with your live name, portrait, and profile QR code.
 
-The firmware supports **LinkedIn, X, and GitHub**, with six styles for each account: an `init()` ASCII portrait, two provider-inspired layouts, and three outdoor emblems—Summit, Grove, and Tide. Portraits and QR codes are generated from the signed-in user's own profile data.
+The firmware supports **LinkedIn, X, and GitHub**, each with an `init()` ASCII portrait layout. Portraits and QR codes are generated from the signed-in user's own profile data.
 
 Saved profiles load before networking starts. In the latest hardware check, all three profiles and avatars were ready in about **1.3 seconds**, including a restart with Wi-Fi disabled. When online, the badge refreshes in the background and reuses unchanged avatars.
 
@@ -19,13 +19,13 @@ Designed for the M5Stack StopWatch with an ESP32-S3, 16 MiB flash, 8 MiB PSRAM, 
 | Control | Action |
 | --- | --- |
 | Blue pusher | Next connected account: LinkedIn → X → GitHub |
-| Yellow pusher | Next style for the current account |
+| Yellow pusher | Reserved for future styles; currently leaves the badge unchanged |
 | Both pushers together | Open Settings |
 | Either pusher from Settings | Return to the badge |
 | Short tap and release on the badge | Expand or shrink its QR code |
 | Turn the device | Automatically rotate the display |
 
-One simultaneous press opens Settings; no double-click is needed. Both pushers must be released before another action. Recognized drags and holds do not trigger a badge tap. Each account remembers its own style, and the last selected account is restored at startup.
+One simultaneous press opens Settings; no double-click is needed. Both pushers must be released before another action. Recognized drags and holds do not trigger a badge tap. The last selected account is restored at startup. Any previously saved style choice now opens that account's `init()` layout.
 
 ## Build and flash
 

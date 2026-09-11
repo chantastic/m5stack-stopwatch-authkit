@@ -1,12 +1,12 @@
 #pragma once
 #include <stdint.h>
 
-static constexpr uint8_t BADGE_STYLE_COUNT=6;
+static constexpr uint8_t BADGE_STYLE_COUNT=1;
 static constexpr uint8_t BADGE_STYLE_PROVIDER_COUNT=3;
 
 // Storage order follows ProfileProvider: X, LinkedIn, GitHub. A versioned NVS
 // key keeps the former nine-design carousel preference separate from this set.
-// Append styles so existing per-account values 0–2 retain their meaning.
+// The init() face is style zero. Removed alternatives restore to that face.
 class BadgeStyles {
   uint8_t choices[BADGE_STYLE_PROVIDER_COUNT]={};
 public:

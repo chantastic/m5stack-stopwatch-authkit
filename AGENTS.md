@@ -13,5 +13,7 @@
 - `scripts/flash.sh PORT` rebuilds and uploads application components. Firmware
   changes should preserve the partition layout and saved user state.
 - Avatar and profile behavior must remain dynamic. Avoid static personal assets.
-- Blue changes accounts, yellow changes styles, and both pushers open Settings.
+- Keep one `init()` ASCII layout for each account. Blue changes accounts; yellow
+  is reserved for future styles and currently leaves the badge unchanged. Both
+  pushers open Settings, and either pusher returns from Settings to the badge.
   Touch uses completed taps on release; keep orientation handling intact.

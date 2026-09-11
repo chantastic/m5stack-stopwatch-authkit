@@ -27,9 +27,9 @@ All paths below are relative to `firmware/devices_badge/`.
 | `profile_urls.h` | Provider-specific profile and avatar URL validation |
 | `profile_store.h` | Bounded, context-checked LittleFS profile records and durable invalidation |
 | `background_http.h` | One background HTTPS worker with explicit request/result ownership |
-| `account_paging.h`, `badge_styles.h` | Connected-account order and independent style preferences |
+| `account_paging.h`, `badge_styles.h` | Connected-account order, layout selection, and saved-style migration |
 | `button_gesture.h`, `orientation_filter.h` | Pusher chord handling and accelerometer settling |
-| `badge.h`, `outdoor_badge.h`, `palette_qr.h` | Badge layouts, generated portrait treatments, and QR rendering |
+| `badge.h` | Per-provider `init()` layouts, ASCII portraits, and QR rendering |
 | `avatar_decode.h`, `vendor/stb_image.h` | Bounded baseline/progressive JPEG decoding in PSRAM |
 | `trust.h`, `avatar_trust.h`, `linkedin_avatar_trust.h` | Public server certificate roots |
 | `init_wordmark.h`, `github_mark.h` | Static branding masks, separate from dynamic user portraits |
@@ -54,13 +54,13 @@ Unavailable or rate-limited responses preserve an existing matching badge and sc
 
 ## Startup, refresh, and rendering
 
-Startup restores the saved account/style preferences and session context, then loads matching flash records and draws the badge before starting network requests. Restoring a badge does not establish a live authenticated session. After Wi-Fi and session renewal, the firmware checks all three profile endpoints in the background.
+Startup restores the saved account and session context, then loads matching flash records and draws the badge before starting network requests. Each provider has one `init()` ASCII layout. Previously saved style choices normalize to that layout, and a changed packed preference is queued for one save after the normal debounce. The selected account is preserved. Restoring a badge does not establish a live authenticated session. After Wi-Fi and session renewal, the firmware checks all three profile endpoints in the background.
 
 One FreeRTOS worker handles HTTPS. The main loop polls owned results without waiting for network completion. Authentication responses are consumed even if connectivity drops after completion, so a rotated refresh token is not lost. Rendering, avatar decoding, hashing, and file writes remain on the main task.
 
-Each provider owns a RAM profile and a 400 × 400 RGB565 avatar canvas. Account paging, style changes, QR expansion, and rotation use those records without HTTP. An unchanged remote account ID and avatar URL reuse existing pixels. If that account's new image fails, its old image can remain while another attempt is scheduled. A different remote account cannot inherit the previous account's image.
+Each provider owns a RAM profile and a 400 × 400 RGB565 avatar canvas. Account paging, QR expansion, and rotation use those records without HTTP. Blue pages through connected accounts. Yellow is reserved for future layouts and leaves the badge unchanged; either pusher still returns from Settings. An unchanged remote account ID and avatar URL reuse existing pixels. If that account's new image fails, its old image can remain while another attempt is scheduled. A different remote account cannot inherit the previous account's image.
 
-Successful boot/manual refreshes do not enable continuous provider polling. Retryable failures use a later retry, and session renewal runs independently. Selected-account and per-account style preferences save after a short debounce. Rotation uses local BMI270 measurements and does not write to flash.
+Successful boot/manual refreshes do not enable continuous provider polling. Retryable failures use a later retry, and session renewal runs independently. Selected-account changes save after a short debounce. Rotation uses local BMI270 measurements and does not write to flash.
 
 ## Persistent profile store
 
@@ -74,10 +74,10 @@ Saves write and synchronize a temporary file, verify it, and atomically rename i
 
 ## Build and verification
 
-The established toolchain is ESP32 Arduino core **3.3.10**, M5Unified **0.2.19**, M5GFX **0.2.26**, and ArduinoJson **7.4.3**. The initial clean repository build uses **1,544,403 application bytes**, about 49% of its 3,145,728-byte slot. The earlier installed build used 1,544,419 bytes and 52,808 bytes of static/global memory. Build size can vary even with unchanged source; creating this repository did not reflash the device.
+The established toolchain is ESP32 Arduino core **3.3.10**, M5Unified **0.2.19**, M5GFX **0.2.26**, and ArduinoJson **7.4.3**. The application slot is 3,145,728 bytes. The build reports application size and static/global memory use; generated binaries remain outside Git.
 
-`scripts/test.sh` runs host checks against production helpers and extracted production functions. Coverage includes provider and workspace isolation, URL validation, account/style selection, button and orientation behavior, transport cancellation and response ownership, token rotation, storage corruption, bounded records, and injected file/NVS failures. These simulations complement compiling the complete sketch; they do not emulate the display or radio.
+`scripts/test.sh` runs host checks against production helpers and extracted production functions. Coverage includes provider and workspace isolation, URL validation, account/layout selection, migration of all 216 combinations of prior saved styles, button and orientation behavior, transport cancellation and response ownership, token rotation, storage corruption, bounded records, and injected file/NVS failures. These simulations complement compiling the complete sketch; they do not emulate the display or radio.
 
-The private hardware check restored all three saved profiles and avatars in **1,249 ms with Wi-Fi disabled** and **1,286 ms on a normal restart**, before network requests. The three offline frames matched the online frames pixel for pixel, and their QR codes decoded correctly. Reconnection made three profile requests, zero avatar requests, and zero cache writes because the data was unchanged. These are measured samples, not startup guarantees. The check exercised shared button dispatch; it did not measure physical touch latency or interrupt real flash writes with power loss.
+The private hardware check restored all three saved profiles and avatars in **1,260 ms with Wi-Fi disabled** and **1,300 ms on a normal restart**, before network requests. The three offline frames matched the online frames pixel for pixel. All three normal, expanded, and offline profile QRs decoded correctly, including through the circular display aperture. Saved alternative styles reset to `init()` and stayed reset after restart. Yellow preserved the current badge and expanded QR; blue account paging and Settings dispatch passed. Reconnection made three profile requests, zero avatar requests, and zero cache writes because the data was unchanged. These are measured samples, not startup guarantees. The check exercised shared button dispatch; it did not measure physical touch latency or interrupt real flash writes with power loss.
 
 Private captures, device identifiers, session logs, and full-device backups are excluded from this repository.

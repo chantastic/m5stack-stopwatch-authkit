@@ -75,7 +75,6 @@ void drawProfileQr(int left,int top,int size) {
   // M5GFX selects a QR version and supplies a four-module white quiet zone.
   if(!profileUrl.isEmpty())M5.Display.qrcode(profileUrl.c_str(),left,top,size,1,true);
 }
-#include "palette_qr.h"
 
 void drawProfileStatus(int cx) {
   auto &d=M5.Display;
@@ -105,12 +104,10 @@ void drawProfileStatus(int cx) {
   d.drawString("chan.dev / Devices",cx,403);
 }
 
-// Drawing-only faces share the same verified profile and expanded QR.
-static constexpr uint8_t BADGE_DESIGN_COUNT=18;
+// One init() face per provider, using the same verified profile and expanded QR.
+static constexpr uint8_t BADGE_DESIGN_COUNT=BADGE_STYLE_PROVIDER_COUNT*BADGE_STYLE_COUNT;
 const char* const BADGE_DESIGN_NAMES[BADGE_DESIGN_COUNT]={
-  "X ASCII","X Timeline","X Portrait","X Summit","X Grove","X Tide",
-  "LinkedIn ASCII","LinkedIn Profile","LinkedIn Card","LinkedIn Summit","LinkedIn Grove","LinkedIn Tide",
-  "GitHub ASCII","GitHub Panels","GitHub README","GitHub Summit","GitHub Grove","GitHub Tide"
+  "X init()","LinkedIn init()","GitHub init()"
 };
 constexpr uint16_t badgeRgb(uint32_t rgb) {
   return ((rgb>>8)&0xF800)|((rgb>>5)&0x07E0)|((rgb>>3)&0x001F);
@@ -157,13 +154,12 @@ void badgeTiny(const String &text,int x,int y,uint16_t color,uint16_t background
 void badgeName(int x,int y,int width,uint16_t color,uint16_t background,const lgfx::IFont *font) {
   auto &d=M5.Display;d.setTextSize(1);d.setFont(font);d.setTextDatum(middle_center);d.setTextColor(color,background);
   const String name=profileName.isEmpty()?profileHandle:profileName;
-  // Fit ordinary full names before truncating, keeping each design's typeface.
+  // Fit ordinary full names before truncating, keeping the selected typeface.
   // Stop at 12pt so unusually long names cannot become unreadably small.
   bool mono=font==&fonts::FreeMonoBold24pt7b || font==&fonts::FreeMonoBold18pt7b || font==&fonts::FreeMonoBold12pt7b;
-  bool serif=font==&fonts::FreeSerifBold24pt7b || font==&fonts::FreeSerifBold18pt7b || font==&fonts::FreeSerifBold12pt7b;
-  bool large=font==&fonts::FreeMonoBold24pt7b || font==&fonts::FreeSerifBold24pt7b || font==&fonts::FreeSansBold24pt7b;
-  if(d.textWidth(name)>width && large)d.setFont(mono?&fonts::FreeMonoBold18pt7b:serif?&fonts::FreeSerifBold18pt7b:&fonts::FreeSansBold18pt7b);
-  if(d.textWidth(name)>width)d.setFont(mono?&fonts::FreeMonoBold12pt7b:serif?&fonts::FreeSerifBold12pt7b:&fonts::FreeSansBold12pt7b);
+  bool large=font==&fonts::FreeMonoBold24pt7b || font==&fonts::FreeSansBold24pt7b;
+  if(d.textWidth(name)>width && large)d.setFont(mono?&fonts::FreeMonoBold18pt7b:&fonts::FreeSansBold18pt7b);
+  if(d.textWidth(name)>width)d.setFont(mono?&fonts::FreeMonoBold12pt7b:&fonts::FreeSansBold12pt7b);
   d.drawString(badgeFitText(name,width),x,y);
 }
 void badgeIdentity(int cx,int y,int maxWidth,uint16_t color,uint16_t background,const lgfx::IFont *font=&fonts::FreeSans9pt7b,int icon=17) {
@@ -174,14 +170,7 @@ void badgeIdentity(int cx,int y,int maxWidth,uint16_t color,uint16_t background,
   d.setTextDatum(middle_left);d.drawString(text,left+icon+10,y);d.setTextDatum(middle_center);
 }
 void badgeFooter(uint16_t color,uint16_t background) {
-  const uint8_t style=selectedBadgeStyle();
-  String label=String(profileProviderName())+" / ";
-  if(style>=3 && style<=5) {
-    static const char * const outdoorNames[]={"Summit","Grove","Tide"};
-    label=String(profileProviderName())+" "+outdoorNames[style-3]+" ";
-    label+=String(style+1)+"/"+String(BADGE_STYLE_COUNT);
-  } else label+=String(style+1)+" OF "+String(BADGE_STYLE_COUNT);
-  badgeTiny(label,234,style>=3?438:445,color,background);
+  badgeTiny(profileProviderName(),234,445,color,background);
 }
 
 // Sample the current profile sprite into a 30 × 24 grid. Character density
@@ -220,143 +209,6 @@ void badgeInitAscii() {
   badgeIdentity(234,403,284,BADGE_INIT_WHITE,BADGE_INIT_BLACK,&fonts::FreeMono9pt7b,17);
   badgeFooter(BADGE_INIT_GRAY,BADGE_INIT_BLACK);
 }
-
-// Profile-header portrait masking keeps the two backgrounds intact where the
-// circle crosses from the cover into the body. It uses only cached pixels.
-void badgeSplitAvatar(int cx,int cy,int size,int splitY,uint16_t above,uint16_t below) {
-  auto &d=M5.Display;badgeAvatar(cx,cy,size,false,below);
-  const int left=cx-size/2,top=cy-size/2;const float radius=size*.5f;
-  for(int row=0;row<size;row++) {
-    float dy=row+.5f-radius;
-    int inset=ceilf(radius-sqrtf(max(0.0f,radius*radius-dy*dy)));
-    uint16_t background=top+row<splitY?above:below;
-    if(inset) {
-      d.fillRect(left,top+row,inset,1,background);
-      d.fillRect(left+size-inset,top+row,inset,1,background);
-    }
-  }
-}
-
-// LinkedIn / Profile: an app-like blue cover and warm-white profile body.
-// The avatar overlaps the cover; the QR occupies the companion column.
-void badgeLinkedInProfile() {
-  auto &d=M5.Display;
-  const uint16_t blue=badgeRgb(0x0A66C2),paper=badgeRgb(0xF3F2EF);
-  const uint16_t ink=badgeRgb(0x172B3B),muted=badgeRgb(0x596D7C);
-  d.fillScreen(paper);d.fillRect(0,0,468,138,blue);
-  drawInitWordmark(123,45,222,TFT_WHITE);
-  badgeTiny("LINKEDIN / PROFILE",290,116,TFT_WHITE,blue);
-  badgeSplitAvatar(139,186,146,138,blue,paper);
-  d.drawCircle(139,186,74,paper);d.drawCircle(139,186,75,paper);
-  badgeTiny("PROFILE PHOTO",139,283,muted,paper);
-  badgeTiny("OPEN PROFILE",320,145,muted,paper);
-  drawProfileQr(246,160,148);
-  badgeName(234,349,370,ink,paper,&fonts::FreeSansBold24pt7b);
-  badgeIdentity(234,391,330,blue,paper,&fonts::FreeSans9pt7b,18);
-  d.drawFastHLine(161,420,146,badgeRgb(0xCED6DA));
-  badgeFooter(muted,paper);
-}
-
-// LinkedIn / Card: restrained navy stationery, large serif identity, and a
-// photograph/QR pair beneath it. No role, company, or credential is invented.
-void badgeLinkedInCard() {
-  auto &d=M5.Display;
-  const uint16_t navy=badgeRgb(0x0A2238),white=badgeRgb(0xF5F2E8);
-  const uint16_t blue=badgeRgb(0x8CCBFF),line=badgeRgb(0x37546A);
-  d.fillScreen(navy);
-  drawInitWordmark(111,43,246,white);
-  badgeTiny("LINKEDIN / CONTACT",234,115,blue,navy);
-  d.drawFastHLine(99,137,270,line);
-  badgeName(234,177,370,white,navy,&fonts::FreeSerifBold24pt7b);
-  badgeIdentity(234,216,350,blue,navy,&fonts::FreeSans9pt7b,18);
-  badgeAvatar(134,311,124,true,navy);
-  d.drawCircle(134,311,67,line);d.drawCircle(134,311,70,line);
-  drawProfileQr(246,244,146);
-  badgeTiny("PROFILE",134,399,blue,navy);
-  d.drawFastHLine(171,422,126,line);
-  badgeFooter(white,navy);
-}
-
-// X / Timeline: a real profile header and a simple thread rail leading to its
-// public-profile QR. The face makes no claims about posts, follows, or counts.
-void badgeXTimeline() {
-  auto &d=M5.Display;
-  const uint16_t black=badgeRgb(0x050505),white=badgeRgb(0xF5F2E8);
-  const uint16_t muted=badgeRgb(0x8C939B),line=badgeRgb(0x30363D);
-  d.fillScreen(black);
-  drawInitWordmark(109,43,250,white);
-  d.drawFastHLine(76,117,316,line);
-  badgeAvatar(102,173,76,true,black);
-  badgeName(270,163,242,white,black,&fonts::FreeSansBold18pt7b);
-  badgeIdentity(270,201,230,muted,black,&fonts::FreeSans9pt7b,16);
-  d.drawFastVLine(102,218,136,line);
-  d.drawCircle(102,374,16,line);drawX(92,364,20,white);
-  badgeTiny("PUBLIC PROFILE / X.COM",285,232,muted,black);
-  drawProfileQr(202,248,166);
-  badgeFooter(muted,black);
-}
-
-// X / Portrait: a photograph-led poster with a high-contrast header and caption
-// block. A solid QR quiet zone stays readable regardless of the source image.
-void badgeXPortrait() {
-  auto &d=M5.Display;
-  const uint16_t paper=badgeRgb(0xFAFAF7),ink=badgeRgb(0x101010);
-  d.fillScreen(ink);
-  badgeAvatar(234,214,468,false,ink);
-  d.fillRect(0,0,468,112,ink);
-  drawInitWordmark(112,42,244,paper);
-  drawProfileQr(274,148,140);
-  d.fillRect(0,313,468,155,paper);
-  d.fillRect(71,313,326,4,ink);
-  badgeName(234,352,368,ink,paper,&fonts::FreeSansBold24pt7b);
-  badgeIdentity(234,397,320,ink,paper,&fonts::FreeMono9pt7b,18);
-  badgeFooter(ink,paper);
-}
-
-// GitHub / Panels: the native dark profile palette, two bordered content panes,
-// then the actual account identity. The panels are visual frames, not buttons.
-void badgeGitHubPanels() {
-  auto &d=M5.Display;
-  const uint16_t bg=badgeRgb(0x0D1117),panel=badgeRgb(0x161B22);
-  const uint16_t white=badgeRgb(0xF0F3F6),muted=badgeRgb(0x9198A1),line=badgeRgb(0x3D444D);
-  d.fillScreen(bg);
-  drawInitWordmark(116,44,236,white);
-  badgeTiny("GITHUB / PROFILE",234,116,muted,bg);
-  badgeTiny("AVATAR",143,143,muted,bg);
-  badgeTiny("GITHUB.COM",319,143,muted,bg);
-  d.fillRoundRect(62,156,160,160,10,panel);d.drawRoundRect(62,156,160,160,10,line);
-  badgeAvatar(142,236,140,false,panel);
-  d.fillRoundRect(240,156,160,160,10,panel);d.drawRoundRect(240,156,160,160,10,line);
-  drawProfileQr(243,159,154);
-  badgeName(234,353,370,white,bg,&fonts::FreeSansBold24pt7b);
-  badgeIdentity(234,393,330,white,bg,&fonts::FreeMono9pt7b,18);
-  d.drawFastHLine(163,420,142,line);
-  badgeFooter(muted,bg);
-}
-
-// GitHub / README: light Markdown-like typography and a compact portrait. The
-// heading is the live name, and the only link destination is the real profile.
-void badgeGitHubReadme() {
-  auto &d=M5.Display;
-  const uint16_t paper=badgeRgb(0xF6F8FA),ink=badgeRgb(0x1F2328);
-  const uint16_t blue=badgeRgb(0x0969DA),muted=badgeRgb(0x59636E),line=badgeRgb(0xD1D9E0);
-  d.fillScreen(paper);
-  drawInitWordmark(120,45,228,ink);
-  badgeTiny("README.md",234,115,muted,paper,2);
-  d.drawFastHLine(77,139,314,line);
-  badgeAvatar(115,210,100,true,paper);
-  badgeTiny("# PROFILE",284,161,blue,paper,2);
-  badgeName(285,199,222,ink,paper,&fonts::FreeSansBold18pt7b);
-  badgeIdentity(284,238,220,muted,paper,&fonts::FreeMono9pt7b,16);
-  badgeTiny("## links",136,303,ink,paper,2);
-  badgeTiny("github.com",136,331,muted,paper);
-  d.drawFastHLine(99,361,92,blue);
-  d.fillTriangle(192,355,202,361,192,367,blue);
-  drawProfileQr(246,256,146);
-  badgeFooter(muted,paper);
-}
-
-#include "outdoor_badge.h"
 
 // A missing LinkedIn URL is setup, not a guessed destination. Keep the
 // connected name/photo visible and label the separate Connections QR clearly.
@@ -399,19 +251,7 @@ void drawBadge() {
     String shortUrl=profileUrl;if(shortUrl.startsWith("https://"))shortUrl.remove(0,8);
     d.drawString(badgeFitText(shortUrl,200),234,438);
   } else {
-    uint8_t style=selectedBadgeStyle();
-    if(style>=3) {
-      if(style==3)badgeOutdoorSummit();
-      else if(style==4)badgeOutdoorGrove();
-      else badgeOutdoorTide();
-    } else if(style==0)badgeInitAscii();
-    else if(selectedProvider==PROFILE_LINKEDIN) {
-      if(style==1)badgeLinkedInProfile();else badgeLinkedInCard();
-    } else if(selectedProvider==PROFILE_GITHUB) {
-      if(style==1)badgeGitHubPanels();else badgeGitHubReadme();
-    } else {
-      if(style==1)badgeXTimeline();else badgeXPortrait();
-    }
+    badgeInitAscii();
   }
   d.setTextDatum(middle_center);d.setTextSize(1);d.endWrite();d.display();
 }

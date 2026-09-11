@@ -154,9 +154,9 @@ void dispatchButtonAction(BadgeButtonAction action,bool remember) {
     stopPortal();screen=SETTINGS;showBadge=false;expanded=false;lastInteraction=millis();redraw=true;
   } else if(action==BadgeButtonAction::BLUE)pageAccounts(1,remember);
   else {
-    // Yellow changes only this account's style. From Settings it returns
-    // without cycling, just as the blue pusher returns without paging.
-    if(screen==BADGE)selectBadgeStyle(0,1,remember);
+    // Yellow is reserved for styles. With one style it leaves the badge and
+    // expanded QR alone; from Settings it still returns without paging.
+    if(screen==BADGE) {if(BADGE_STYLE_COUNT>1)selectBadgeStyle(0,1,remember);}
     else pageAccounts(0,false);
   }
   Serial.printf("BADGE_ACTION action=%s screen=%s provider=%s design=%u style=%u active_style_count=%u design_total=%u page=%u available_count=%u fetch_count=%u avatar_fetch_count=%u cache_hits=%u profiles_pending=%u input_presses=%u\n",
@@ -436,7 +436,10 @@ void setup() {
   // points the badge at an existing sprite; it never downloads or copies it.
   for(auto &cache:profileCache) {cache.avatar.setPsram(true);cache.avatar.setColorDepth(16);cache.avatar.createSprite(400,400);}
   settings.begin("devices",false);
-  badgeStyles.restore(settings.getUInt("styles_v1",0));savedBadgeStyles=badgeStyles;
+  const uint32_t storedStyles=settings.getUInt("styles_v1",0);
+  badgeStyles.restore(storedStyles);savedBadgeStyles=badgeStyles;
+  // Persist the fallback once so deleted styles cannot return in a later build.
+  if(savedBadgeStyles.packed()!=storedStyles) {stylePreferenceDirty=true;stylePreferenceSaveAfter=millis()+1500;}
   uint8_t savedProvider=settings.getUChar("provider",uint8_t(PROFILE_LINKEDIN));
   selectedProvider=savedProvider<ACCOUNT_PROVIDER_COUNT?ProfileProvider(savedProvider):PROFILE_LINKEDIN;
   syncBadgeDesign();
