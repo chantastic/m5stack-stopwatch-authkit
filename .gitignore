@@ -1,0 +1,30 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
+.wrangler/
+credentials*.json
+session*.json
+
+# Builds, device images, dumps, and captured user data
+.build/
+build/
+backups/
+captures/
+outputs/
+work/
+*.bin
+*.elf
+*.map
+*.dSYM/
+*.dump
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+
+# Arduino-generated metadata
+build.options.json
+compile_commands.json
