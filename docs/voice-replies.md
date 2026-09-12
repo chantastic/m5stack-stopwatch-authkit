@@ -130,13 +130,17 @@ Installed and checked September 11, 2026 (Pacific):
   zero avatar downloads and zero cache rewrites. Account paging, reserved yellow,
   and both-pusher Settings dispatch passed through the diagnostic controls.
 
-**Remaining live X requirements:** the gateway returned the explicit X API
+**Remaining live X requirement: API credits.** The gateway returned the explicit
 credits-required error, so live mentions and posting have not been verified.
-Production's requested scopes now include `tweet.write`, but the existing X
-connection still needs user reauthorization at
-[Connections](https://auth.chan.dev/connections). No credits were purchased and
-no public reply was posted. The installed app remains useful for dictation and
-review while these X requirements are unresolved.
+The shared Auth task subsequently completed X consent through
+[Connections](https://auth.chan.dev/connections), preserving the existing account
+and application. Its fresh saved-connection metadata check verified all four
+requested grants: `offline.access`, `tweet.read`, `users.read`, and `tweet.write`.
+The supported permission-review flow is deployed in shared Auth release
+`eddcdcaf-642b-4b4d-887f-d2422ef76ac3`; no firmware or gateway contract change was
+needed. This permission check does not establish available X API credit or prove
+a live post. No credits were purchased and no public reply was posted. The
+installed app remains useful for dictation and review while credits are missing.
 
 Private captures, source/component hashes and sanitized measurements are under
 `.build/voice-verification/`, `.build/voice-badge-verification-after-restart/` and

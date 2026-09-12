@@ -227,8 +227,9 @@ session successfully resolved through the private shared Auth binding and
 transcribed one 4.75-second physical recording with its personal xAI connection.
 The complete expected phrase appeared on the board's review screen. Production
 signed-out route and TLS checks passed. Live X returned its credits-required
-error; mentions/posting still need X credits, and posting also needs the user's
-`tweet.write` reauthorization. No public reply or credit purchase was made.
+error; mentions/posting still need X credits. The subsequent shared Auth consent
+check verified the existing connection has all requested grants, including
+`tweet.write`. No public reply or credit purchase was made.
 See [the device verification record](../docs/voice-replies.md#verification-status)
 for exact measurements and limitations.
 

@@ -29,9 +29,10 @@ One simultaneous press opens Settings; no double-click is needed. Both pushers m
 
 **Settings → X replies** opens the voice reply app. Hold blue to record, release to transcribe, review every page, then tap **Send** deliberately. Blue has this recording behavior only inside the app. Back returns to the badge; both pushers still open Settings. See [voice replies](docs/voice-replies.md) for the service requirements, recovery behavior, and verification status.
 
-The installed gateway and board have passed a live xAI dictation check. Live X
-mentions currently require API credits, and posting requires reauthorizing the
-X connection with `tweet.write`. No public reply was sent during verification.
+The installed gateway and board have passed a live xAI dictation check. X
+reauthorization is complete, including verified `tweet.write` permission. Live X
+mentions and posting still require API credits. No public reply was sent during
+verification.
 
 ## Build and flash
 
