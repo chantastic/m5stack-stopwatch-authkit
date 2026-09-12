@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "chan-devices",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "devices.chan.dev", "custom_domain": true }],
+  "services": [{ "binding": "DEVICES_IDENTITY", "service": "chan-identity-web", "entrypoint": "DevicesIdentity" }],
+  "durable_objects": { "bindings": [{ "name": "REPLIES", "class_name": "ReplyLedger" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ReplyLedger"] }],
+  "vars": { "DEVICES_CLIENT_ID": "client_01M24S76WQHXQ6QJJ7S83CMR3F" },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1, "redact_query_string": true, "logs": { "enabled": true, "invocation_logs": false } }
+}

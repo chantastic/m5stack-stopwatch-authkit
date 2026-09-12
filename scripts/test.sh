@@ -13,10 +13,16 @@ if [[ "$(uname -s)" != Darwin ]]; then
 fi
 mkdir -p "$REPO_ROOT/.build/tests"
 FLAGS=(-std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer)
-for name in account_paging badge_styles button_gesture orientation_filter profile_urls; do
+for name in account_paging badge_styles button_gesture orientation_filter profile_urls voice_reply_state; do
   "$CXX" "${FLAGS[@]}" "$REPO_ROOT/tests/check_$name.cpp" -o "$REPO_ROOT/.build/tests/$name"
   "$REPO_ROOT/.build/tests/$name"
 done
+"$CXX" "${FLAGS[@]}" -I"$REPO_ROOT/tests/background-http-host" \
+  "$REPO_ROOT/tests/check_voice_reply_ui.cpp" -o "$REPO_ROOT/.build/tests/voice-reply-ui"
+"$REPO_ROOT/.build/tests/voice-reply-ui"
+"$CXX" "${FLAGS[@]}" -pthread -I"$REPO_ROOT/tests/voice-recorder-host" \
+  "$REPO_ROOT/tests/voice-recorder-host/check.cpp" -o "$REPO_ROOT/.build/tests/voice-recorder"
+"$REPO_ROOT/.build/tests/voice-recorder"
 "$CXX" "${FLAGS[@]}" -Wno-deprecated-declarations \
   -I"$REPO_ROOT/tests/profile-store-test/include" \
   "$REPO_ROOT/tests/profile-store-test/test.cpp" -o "$REPO_ROOT/.build/tests/profile-store"
@@ -27,3 +33,4 @@ done
 "$REPO_ROOT/.build/tests/background-http"
 export CXX
 python3 "$REPO_ROOT/tests/profile-scheduler-check/run.py"
+python3 "$REPO_ROOT/tests/voice-controller-host/run.py"

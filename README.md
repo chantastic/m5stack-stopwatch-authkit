@@ -10,7 +10,7 @@ Saved profiles load before networking starts. In the latest hardware check, all 
 
 This is firmware for a personal device, currently configured for chan.dev's **Production Devices** AuthKit application and the existing `https://auth.chan.dev` service. The public client ID is intentionally in the source; passwords, client secrets, and provider tokens are not.
 
-The chan.dev backend is maintained separately and is **not included here**. Building this repository does not create an AuthKit application, configure Pipes providers, or deploy a backend. A clean build still targets the existing chan.dev environment. See [architecture](docs/architecture.md) for the service contract and [privacy](docs/privacy.md) for storage and credential handling.
+Shared authentication and Pipes are maintained in the separate **auth.chan.dev** project. This repository also contains the focused **Devices gateway** in `gateway/`, which uses a private binding to that existing service. Building the firmware does not create another AuthKit application, configure providers, or deploy the gateway. A clean build still targets the existing chan.dev environment. See [architecture](docs/architecture.md) for the service contract and [privacy](docs/privacy.md) for storage and credential handling.
 
 ## Hardware and controls
 
@@ -26,6 +26,12 @@ Designed for the M5Stack StopWatch with an ESP32-S3, 16 MiB flash, and 8 MiB PSR
 | Turn the device | Automatically rotate the display |
 
 One simultaneous press opens Settings; no double-click is needed. Both pushers must be released before another action. Recognized drags and holds do not trigger a badge tap. The last selected account is restored at startup. Any previously saved style choice now opens that account's `init()` layout.
+
+**Settings → X replies** opens the voice reply app. Hold blue to record, release to transcribe, review every page, then tap **Send** deliberately. Blue has this recording behavior only inside the app. Back returns to the badge; both pushers still open Settings. See [voice replies](docs/voice-replies.md) for the service requirements, recovery behavior, and verification status.
+
+The installed gateway and board have passed a live xAI dictation check. Live X
+mentions currently require API credits, and posting requires reauthorizing the
+X connection with `tweet.write`. No public reply was sent during verification.
 
 ## Build and flash
 

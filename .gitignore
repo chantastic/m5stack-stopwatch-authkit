@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
 *.local
 *.local.*
 .wrangler/
@@ -22,6 +24,10 @@ work/
 *.dSYM/
 *.dump
 *.log
+*.wav
+*.pcm
+node_modules/
+dist/
 __pycache__/
 *.pyc
 .DS_Store

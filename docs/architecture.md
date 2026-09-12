@@ -13,7 +13,7 @@ flowchart LR
   Badge <-->|Public profiles and pixels| Cache[Local flash cache]
 ```
 
-The backend, provider OAuth applications, and WorkOS configuration are maintained outside this repository. No backend deployment is needed to rebuild this existing device. Supporting another environment would require configuring those services and updating the fixed client, endpoint, and trust settings in the firmware.
+Shared Auth, provider OAuth applications, and WorkOS configuration are maintained outside this repository. The existing badge contract remains there. The voice reply app adds a narrow companion Worker in this repository's `gateway/`, at `devices.chan.dev`, using the separate Auth service's private `DevicesIdentity` binding. It follows the existing Social-to-Auth injected adapter pattern without moving device workflows into Social or duplicating authentication. Building firmware does not deploy either service. See [voice replies](voice-replies.md) for the new flow and verification status.
 
 ## Source map
 
@@ -33,6 +33,16 @@ All paths below are relative to `firmware/devices_badge/`.
 | `avatar_decode.h`, `vendor/stb_image.h` | Bounded baseline/progressive JPEG decoding in PSRAM |
 | `trust.h`, `avatar_trust.h`, `linkedin_avatar_trust.h` | Public server certificate roots |
 | `init_wordmark.h`, `github_mark.h` | Static branding masks, separate from dynamic user portraits |
+| `voice_recorder.h` | Worker-owned bounded microphone capture and canonical WAV output |
+| `voice_reply.h`, `voice_reply_state.h` | Reply app, hold gesture, explicit-send gate, saved receipt recovery |
+| `voice_reply_ui.h` | Round-screen paginated inbox, recording, transcript review, and status views |
+
+The companion `gateway/` owns provider requests, usage limits, sender/target
+validation, and durable reply receipts. Shared Auth owns token verification,
+fresh session checks, personal workspace resolution, and narrowly approved
+private Pipes credential access. The gateway has no WorkOS environment secret
+or browser authentication implementation. Existing profiles continue using the
+original endpoints; this feature is not a migration of those routes.
 
 ## Authentication and existing service contract
 

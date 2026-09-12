@@ -8,16 +8,17 @@ uint32_t portalDeadline=0,portalConnectDeadline=0;
 void drawBack() {
  auto &d=M5.Display;d.fillRoundRect(155,393,158,46,18,0x2104);d.setTextDatum(middle_center);d.setTextColor(TFT_WHITE,TFT_BLACK);d.setFont(&fonts::FreeSans9pt7b);d.drawString("Back",234,416);
 }
-void menuItem(int y,const char *title,const String &subtitle) {
- auto &d=M5.Display;d.fillRoundRect(65,y,338,82,18,0x18C3);
- d.setTextDatum(middle_left);d.setTextColor(TFT_WHITE);d.setFont(&fonts::FreeSansBold12pt7b);d.drawString(title,90,y+25);
- d.setFont(&fonts::FreeSans9pt7b);d.setTextColor(0xAD75);d.drawString(subtitle,90,y+58);
+void menuItem(int y,const char *title,const String &subtitle,int height=82) {
+ auto &d=M5.Display;d.fillRoundRect(65,y,338,height,18,0x18C3);
+ d.setTextDatum(middle_left);d.setTextColor(TFT_WHITE);d.setFont(&fonts::FreeSansBold12pt7b);d.drawString(title,90,y+(height==82?25:19));
+ d.setFont(&fonts::FreeSans9pt7b);d.setTextColor(0xAD75);d.drawString(subtitle,90,y+(height==82?58:45));
 }
 void renderSettings() {
- auto &d=M5.Display;d.startWrite();d.fillScreen(TFT_BLACK);d.setTextDatum(middle_center);d.setTextColor(TFT_WHITE);d.setFont(&fonts::FreeSansBold18pt7b);d.drawString("Settings",234,81);
- menuItem(111,"Wi-Fi",WiFi.status()==WL_CONNECTED?"Connected":"Set up a network");
- menuItem(205,"AuthKit / chan.dev",authenticated&&time(nullptr)<accessExpires?"Production Devices: connected":"Connect to Production Devices");
- menuItem(299,"Profile",badgeProfileIsReady()?cachedProfileStatus(selectedProvider):String(profileProviderName())+" / connect or refresh");
+ auto &d=M5.Display;d.startWrite();d.fillScreen(TFT_BLACK);d.setTextDatum(middle_center);d.setTextColor(TFT_WHITE);d.setFont(&fonts::FreeSansBold18pt7b);d.drawString("Settings",234,65);
+ menuItem(96,"Wi-Fi",WiFi.status()==WL_CONNECTED?"Connected":"Set up a network",64);
+ menuItem(169,"AuthKit / chan.dev",authenticated&&time(nullptr)<accessExpires?"Production Devices: connected":"Connect to Production Devices",64);
+ menuItem(242,"Profile",badgeProfileIsReady()?cachedProfileStatus(selectedProvider):String(profileProviderName())+" / connect or refresh",64);
+ menuItem(315,"X replies","Hold blue to speak a reply",64);
  drawBack();d.endWrite();d.display();
 }
 void renderWifi() {
@@ -84,12 +85,14 @@ void handlePortal() {
  if(due(portalDeadline)) {stopPortal();portalMessage="Setup timed out. Tap to retry.";}
 }
 void handleTap(int x,int y) {
+ if(screen==REPLIES) {handleVoiceTap(x,y);return;}
  if(screen==BADGE) {
    expanded=!expanded;lastInteraction=millis();
  } else if(screen==SETTINGS) {
-   if(y>=111&&y<=193) {screen=WIFI_SETTINGS;portalMessage="";}
-   else if(y>=205&&y<=287) {screen=AUTH_SETTINGS;state(authenticated?"Connected":"Not connected",authenticated?accountEmail:"Tap below to sign in");}
-   else if(y>=299&&y<=381) {settingsProvider=selectedProvider;screen=PROFILE_SETTINGS;}
+   if(x>=65&&x<=403&&y>=96&&y<160) {screen=WIFI_SETTINGS;portalMessage="";}
+   else if(x>=65&&x<=403&&y>=169&&y<233) {screen=AUTH_SETTINGS;state(authenticated?"Connected":"Not connected",authenticated?accountEmail:"Tap below to sign in");}
+   else if(x>=65&&x<=403&&y>=242&&y<306) {settingsProvider=selectedProvider;screen=PROFILE_SETTINGS;}
+   else if(x>=65&&x<=403&&y>=315&&y<379)enterVoiceReplies();
    else if(y>=393) {screen=BADGE;showBadge=true;}
  } else if(screen==WIFI_SETTINGS) {
    if(!portalActive&&y>=258&&y<=340)startPortal();

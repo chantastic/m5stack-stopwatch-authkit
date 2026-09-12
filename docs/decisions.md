@@ -5,6 +5,18 @@ precedence when a later change updates these decisions.
 
 ## Product direction
 
+- Voice replies are the first app beyond the badge. The user chose a dedicated
+  **Devices gateway**, owned beside firmware, because tiny devices should expose
+  fewer capabilities than the broader Social application. Shared Auth remains a
+  separate project, following Social's existing private binding as the reference.
+  Reuse Production identities and personal connections; do not create a second
+  authentication stack, duplicate provider connections, or move app behavior into
+  shared Auth. See [voice replies](voice-replies.md) for controls and recovery.
+- Speech uses xAI first and an explicit Deepgram fallback. A provider key must
+  remain server-side; the board records and reviews the transcript locally.
+  Release transcribes; a fresh reviewed Send is the only posting action. Unknown
+  network outcomes preserve durable receipts instead of automatically retrying.
+
 - This is a wearable social-profile badge on an M5Stack StopWatch. The broader
   goal is small device apps using the signed-in user's data through Pipes.
 - The WorkOS application is **Devices**, deliberately broad enough for more than

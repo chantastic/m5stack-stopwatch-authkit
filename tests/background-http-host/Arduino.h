@@ -5,6 +5,7 @@
 #include <chrono>
 #include <thread>
 #include <cstdint>
+#include <atomic>
 #define PROGMEM
 class String : public std::string {
  public:
@@ -20,4 +21,5 @@ class String : public std::string {
   String substring(size_t first,size_t last)const{return substr(first,last-first);}
 };
 inline uint32_t millis(){using namespace std::chrono;return uint32_t(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());}
-inline void *ps_malloc(size_t n){return malloc(n);}
+namespace FakePsram {inline std::atomic<bool> failNext{false};}
+inline void *ps_malloc(size_t n){return FakePsram::failNext.exchange(false)?nullptr:malloc(n);}

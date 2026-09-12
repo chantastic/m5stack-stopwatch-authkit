@@ -13,6 +13,9 @@ This firmware is configured for chan.dev's Production Devices application. Each 
 | LinkedIn, X, and GitHub OAuth/provider tokens | Existing chan.dev/WorkOS services; not sent to this firmware |
 | Public profile name, handle, IDs, URLs, and avatar pixels | Device RAM and LittleFS cache |
 | Selected account and styles | Device NVS |
+| Recorded PCM/WAV and transcript | Volatile device memory; bounded HTTPS transcription through the Devices gateway |
+| Unresolved reply key and owner/workspace/target/sender/connection IDs | Device NVS, retained until a definitive matching receipt |
+| Reply receipt and sender/target duplicate guard | Private gateway Durable Object storage |
 
 The public-profile cache excludes email, Wi-Fi credentials, access/refresh tokens, and raw authentication responses. Its owner/workspace identifiers are needed to keep users' records separate. The cached portrait comes from the user's profile and is processed on the device; it is not embedded as a personal image in the source.
 
@@ -21,6 +24,20 @@ The public-profile cache excludes email, Wi-Fi credentials, access/refresh token
 Wi-Fi setup creates a temporary hotspot protected by a newly generated password shown in its QR code. The local portal uses HTTP at `192.168.4.1` over that hotspot. It accepts setup requests from the hotspot interface, checks a per-session nonce, and saves credentials only after joining the selected network. The hotspot closes after success, when leaving setup, or after ten minutes.
 
 WorkOS, backend, and avatar traffic use certificate-validated HTTPS. The firmware sends the WorkOS bearer token only to the exact configured profile/workspace endpoints. Avatar requests use restricted provider CDN URLs, omit the bearer token, and do not follow redirects. Downloads and decoding have size limits.
+
+The voice app also sends its Devices bearer to exact approved routes on
+`devices.chan.dev`. The gateway obtains user-bound X/xAI/Deepgram credentials
+through a private binding to the separate shared Auth service. Those provider
+credentials never enter device responses. The gateway does not save raw audio or
+transcripts and does not log request bodies or tokens. Transcription necessarily
+sends the recorded speech to the explicitly selected provider. The board records
+only after a deliberate hold or an explicitly requested bounded diagnostic.
+
+The board wipes the recording after upload, failure, or cancellation and retains
+transcripts only in RAM for review. Pending receipt metadata survives restart so
+an uncertain network result cannot cause an automatic duplicate reply. Receipt
+storage is not an offline authorization source. See [voice replies](voice-replies.md)
+for send recovery and the distinction between cancellation and retraction.
 
 The device's session checks validate context on a trusted HTTPS response; they are not a general-purpose offline JWT verifier. Authorization for provider data is enforced by the separately maintained backend.
 

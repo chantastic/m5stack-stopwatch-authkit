@@ -45,10 +45,18 @@ verification has used both the full image and a 232-pixel-radius circular
 aperture. Preserve quiet zones and keep useful content inside the visible circle.
 
 The product documents ES8311 audio, an AW8737A speaker amplifier, RX8130CE RTC,
-and vibration hardware. This firmware enables the
-internal IMU and disables internal RTC, microphone, and speaker initialization.
-Those other features and battery runtime have not been validated by this badge
-project. The board's power controller handles its separate power button.
+and vibration hardware. Firmware enables the internal IMU and configures the
+microphone for explicitly requested voice recording. Internal RTC and speaker
+initialization remain disabled; vibration and battery runtime are not validated.
+The board's power controller handles its separate power button. See
+[voice replies](voice-replies.md) for recording limits and verification status.
+
+The pinned M5Unified StopWatch driver uses **I2S1**, with MCLK 18, BCLK 17,
+LRCK 15, and microphone data-in 16. ES8311 is at I²C address `0x18` on SDA 47 /
+SCL 48; the library enables its rail through M5IOE1 GPIO 3. Speaker data-out 21
+and amplifier GPIO 10 are separate. Keep M5Unified's codec callback and channel
+selection intact. `M5.begin()` configures audio; explicit `Mic.begin/record`
+starts capture. Creating the recorder worker alone does not record sound.
 
 ## Pins and controls
 

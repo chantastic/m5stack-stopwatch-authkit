@@ -8,6 +8,7 @@ enum class BadgeButtonAction : uint8_t { NONE, YELLOW, BLUE, SETTINGS };
 class BadgeButtonGesture {
  public:
   static constexpr uint32_t CHORD_GRACE_MS=125;
+  void reset(bool yellow=false,bool blue=false) {pending_=false;suppressed_=yellow||blue;}
   BadgeButtonAction update(bool yellow,bool blue,uint32_t now) {
     const uint8_t held=(yellow?1:0)|(blue?2:0);
     if(suppressed_) {

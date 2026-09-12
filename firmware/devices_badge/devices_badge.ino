@@ -19,13 +19,15 @@ BadgeBackgroundHttp badgeHttp;
 #include "orientation_filter.h"
 #include "button_gesture.h"
 #include "badge_styles.h"
+#include "voice_recorder.h"
+#include "voice_reply_state.h"
 SET_LOOP_TASK_STACK_SIZE(32768);
 
 static constexpr char CLIENT_ID[]="client_01M24S76WQHXQ6QJJ7S83CMR3F";
 static constexpr char EXPECTED_ISSUER[]="https://api.workos.com";
 static constexpr char TOKEN_URL[]="https://api.workos.com/user_management/authenticate";
 Preferences settings;
-enum Screen { BADGE, SETTINGS, WIFI_SETTINGS, AUTH_SETTINGS, PROFILE_SETTINGS };
+enum Screen { BADGE, SETTINGS, WIFI_SETTINGS, AUTH_SETTINGS, PROFILE_SETTINGS, REPLIES };
 enum ProfileProvider : uint8_t { PROFILE_X=0, PROFILE_LINKEDIN=1, PROFILE_GITHUB=2 };
 #include "account_paging.h"
 ProfileProvider selectedProvider=PROFILE_LINKEDIN,settingsProvider=PROFILE_LINKEDIN;
@@ -96,14 +98,25 @@ void activateCachedProfile(ProfileProvider provider);
 void showBestCachedProfile();
 void pageAccounts(int step,bool remember);
 void dispatchButtonAction(BadgeButtonAction action,bool remember);
+void enterVoiceReplies();
+void leaveVoiceReplies(bool toSettings);
+void handleVoiceTap(int x,int y);
+void beginVoiceTouch(int x,int y);
+void handleVoiceButtons();
+void handleVoiceReply();
+void renderVoiceReply();
+void setupVoiceReply();
+bool voiceBlocksOrientation();
+void voiceDiagnostic(const JsonDocument &cmd);
 #include "badge.h"
+#include "voice_reply_ui.h"
 void renderStatus();
 void state(const String &title,const String &detail);
 bool due(uint32_t deadline);
 #include "settings.h"
 
 const char *currentScreenName() {
-  switch(screen) {case BADGE:return "badge";case SETTINGS:return "settings";case WIFI_SETTINGS:return "wifi_settings";case AUTH_SETTINGS:return "auth_settings";case PROFILE_SETTINGS:return "profile_settings";}
+  switch(screen) {case BADGE:return "badge";case SETTINGS:return "settings";case WIFI_SETTINGS:return "wifi_settings";case AUTH_SETTINGS:return "auth_settings";case PROFILE_SETTINGS:return "profile_settings";case REPLIES:return "replies";}
   return "unknown";
 }
 void reportBadgeDesign() {
@@ -150,6 +163,7 @@ void pageAccounts(int step,bool remember) {
 // Physical gestures and serial diagnostics enter through this same dispatch.
 void dispatchButtonAction(BadgeButtonAction action,bool remember) {
   if(action==BadgeButtonAction::NONE)return;
+  if(screen==REPLIES) {if(action==BadgeButtonAction::SETTINGS)leaveVoiceReplies(true);return;}
   if(action==BadgeButtonAction::SETTINGS) {
     stopPortal();screen=SETTINGS;showBadge=false;expanded=false;lastInteraction=millis();redraw=true;
   } else if(action==BadgeButtonAction::BLUE)pageAccounts(1,remember);
@@ -191,7 +205,7 @@ void updateOrientation() {
   lastOrientationSample=now;orientationSampleReady=true;
   // StopWatch mounts BMI270 with native Y along display X, and native X
   // along display Y (the same swap used by its factory bubble-level app).
-  if(orientation.update(data.accel.y,data.accel.x,data.accel.z,now,M5.Touch.getCount()!=0)) {
+  if(orientation.update(data.accel.y,data.accel.x,data.accel.z,now,M5.Touch.getCount()!=0 || voiceBlocksOrientation())) {
     // Called after touch dispatch and only with no contact/release detail left.
     // M5GFX transforms the next touch sample using this new display rotation.
     M5.Display.setRotation(orientation.rotation());redraw=true;orientationChanges++;
@@ -217,6 +231,7 @@ void renderStatus() {
   if(screen==SETTINGS) {renderSettings();return;}
   if(screen==WIFI_SETTINGS) {renderWifi();return;}
   if(screen==PROFILE_SETTINGS) {renderProfileSettings();return;}
+  if(screen==REPLIES) {renderVoiceReply();return;}
   d.startWrite(); d.fillScreen(TFT_BLACK); d.setTextDatum(middle_center); d.setTextColor(TFT_WHITE,TFT_BLACK);
   d.setFont(&fonts::FreeSansBold18pt7b); d.drawString("Devices",cx,51);
   d.setFont(&fonts::FreeSans9pt7b); d.setTextColor(0xAD75,TFT_BLACK);d.drawString("chan.dev / Production",cx,87);
@@ -346,6 +361,7 @@ void handleAuthentication() {
   else if(authenticated && time(nullptr)<accessExpires)state("Connected",accountEmail);
 }
 #include "profile.h"
+#include "voice_reply.h"
 void reportStatus() {
   const char *auth=authenticated&&time(nullptr)<accessExpires?"connected":"not_connected";
   Serial.printf("DEVICE_STATUS wifi=%s auth=%s application=Devices environment=Production client_id=%s user_id=%s\n",WiFi.status()==WL_CONNECTED?"connected":"disconnected",auth,CLIENT_ID,authenticated?currentUserId.c_str():"none");
@@ -365,6 +381,9 @@ void serialCommands() {
     JsonDocument cmd;bool valid=!deserializeJson(cmd,serialInput);serialInput="";
     if(!valid) {Serial.println("COMMAND_REJECTED");continue;}
     String op=cmd["op"]|"";
+    if(op=="voice") {voiceDiagnostic(cmd);continue;}
+    // Diagnostics must leave voice mode through its cancellation/receipt path.
+    if(screen==REPLIES && (op=="badge" || op=="provider" || op=="page" || op=="design"))leaveVoiceReplies(false);
     if(op=="status") {if(cmd["reset_metrics"]|false)idleMaxGap=0;monitorUntil=millis()+20000;reportStatus();}
     else if(op=="orientation")reportOrientation();
     else if(op=="reboot") {
@@ -406,9 +425,10 @@ void serialCommands() {
       else if(cmd["index"].isNull() && cmd["step"].is<int>() && (cmd["step"].as<int>()==1 || cmd["step"].as<int>()==-1))selectBadgeStyle(0,cmd["step"].as<int>(),cmd["remember"]|false);
       else Serial.println("COMMAND_REJECTED");
     }
-    else if(op=="capture_badge") {
-      // Only the public badge can be captured; Wi-Fi and sign-in screens cannot.
-      if(screen!=BADGE) {Serial.println("CAPTURE_REJECTED");continue;}
+    else if(op=="capture_badge" || op=="capture_voice") {
+      // Explicit private test captures may include inbox/transcript content.
+      // Wi-Fi credentials and sign-in screens are never capturable here.
+      if((op=="capture_badge" && screen!=BADGE) || (op=="capture_voice" && screen!=REPLIES)) {Serial.println("CAPTURE_REJECTED");continue;}
       renderStatus();redraw=false;
       int w=M5.Display.width(),h=M5.Display.height();uint8_t row[480*3]={};
       if(w>480 || h>480) {Serial.println("CAPTURE_REJECTED");continue;}
@@ -430,7 +450,7 @@ void serialCommands() {
 }
 void setup() {
   Serial.setTxBufferSize(4096);Serial.begin(115200);Serial.setTxTimeoutMs(0);serialInput.reserve(2048);
-  auto cfg=M5.config();cfg.internal_imu=true;cfg.internal_rtc=false;cfg.internal_mic=false;cfg.internal_spk=false;cfg.fallback_board=m5::board_t::board_M5StopWatch;
+  auto cfg=M5.config();cfg.internal_imu=true;cfg.internal_rtc=false;cfg.internal_mic=true;cfg.internal_spk=false;cfg.fallback_board=m5::board_t::board_M5StopWatch;
   M5.begin(cfg);M5.Display.setRotation(0);M5.Display.setBrightness(150);
   // Each provider owns one independent RGB565 cache in PSRAM. Paging only
   // points the badge at an existing sprite; it never downloads or copies it.
@@ -459,6 +479,7 @@ void setup() {
   renderStatus();redraw=false;
   if(profileReady)cacheBootReadyMs=millis();
   badgeHttp.begin();
+  setupVoiceReply();
   JsonDocument wifi;
   if(!offlineTestBoot && !deserializeJson(wifi,settings.getString("wifi",""))) {
     String ssid=wifi["ssid"]|"",password=wifi["password"]|"";
@@ -473,10 +494,14 @@ void loop() {
   lastLoopStart=now;foregroundOperation=false;
   M5.update();serialCommands();badgeHttp.busy();
   handlePortal();
-  BadgeButtonAction buttonAction=buttonGesture.update(M5.BtnA.isPressed(),M5.BtnB.isPressed(),millis());
-  if(buttonAction!=BadgeButtonAction::NONE) {inputPresses++;dispatchButtonAction(buttonAction,true);}
+  if(screen==REPLIES)handleVoiceButtons();
+  else {
+    BadgeButtonAction buttonAction=buttonGesture.update(M5.BtnA.isPressed(),M5.BtnB.isPressed(),millis());
+    if(buttonAction!=BadgeButtonAction::NONE) {inputPresses++;dispatchButtonAction(buttonAction,true);}
+  }
   if(M5.Touch.getCount()) {
     auto t=M5.Touch.getDetail();
+    if(screen==REPLIES && t.wasPressed())beginVoiceTouch(t.x,t.y);
     // Use the default completed-tap gesture so drags and holds do not select.
     if(t.wasClicked()) {inputPresses++;handleTap(t.x,t.y);}
   }
@@ -488,7 +513,8 @@ void loop() {
     if(!timeStarted) {configTime(0,0,"time.google.com","pool.ntp.org");timeStarted=true;state("Setting clock","Preparing secure sign-in");}
   }
   handleAuthentication();
-  if(deviceCode.isEmpty())handleProfile();
+  handleVoiceReply();
+  if(deviceCode.isEmpty() && (screen!=REPLIES || profileRefreshActive || currentOrgId.isEmpty()))handleProfile();
   if(!profileReady && !authenticated && deviceCode.isEmpty() && !refreshToken.length()) {
     String visibleState=WiFi.status()==WL_CONNECTED?"sign_in_required":"wifi_required";
     if(profileState!=visibleState) {profileState=visibleState;redraw=true;}
