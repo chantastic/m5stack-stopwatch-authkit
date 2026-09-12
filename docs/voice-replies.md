@@ -53,9 +53,21 @@ capability accepts only approved operations. Provider credentials reach the
 gateway over this private binding and never enter public responses or firmware.
 The gateway does not hold a WorkOS environment API key or browser cookie secret.
 
-`gateway/` contains the Worker, durable send ledger, bounded provider adapters,
-configuration, and runtime tests. Its own README is the operational reference.
-Shared Auth is independently deployed from its repository.
+The active Worker, durable send ledger, bounded provider adapters, configuration,
+and tests now live at `~/Developer/chan-services/apps/devices` in private
+`chantastic/chan-services`. Read that workspace's README and the monorepo's
+`docs/deployment.md` for current operations. Shared Auth and Social remain
+separately deployed Workers in the same monorepo. `gateway/` in this firmware
+repository and the standalone `~/Developer/devices.chan.dev` are retained
+historical snapshots; do not use them for gateway changes or deployments.
+
+The migration owner confirmed production activation from monorepo commit
+`892644fe666e64a3a52d2499f55d32483697744f`, with Devices version
+`1bb3c23f-771a-4bfb-9261-1929f84ede00`. The existing Worker identity, domain,
+private Auth binding, ReplyLedger namespace/class/migration and receipt ownership
+were preserved. This source handoff did not alter firmware or reflash the board.
+The earlier hardware measurements below remain attributed to their original
+release; they are not new hardware or live provider tests of the migration.
 
 ## Recording and request ownership
 

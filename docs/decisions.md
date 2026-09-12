@@ -5,10 +5,15 @@ precedence when a later change updates these decisions.
 
 ## Product direction
 
+- The later monorepo decision supersedes the original gateway source location:
+  active Auth, Social, and Devices work is in private `chantastic/chan-services`.
+  Gateway changes/releases use `~/Developer/chan-services/apps/devices` and the
+  monorepo's `docs/deployment.md`. Firmware remains here. The older `gateway/`
+  and standalone Devices sources are preserved as historical snapshots.
 - Voice replies are the first app beyond the badge. The user chose a dedicated
-  **Devices gateway**, owned beside firmware, because tiny devices should expose
+  **Devices gateway**, initially owned beside firmware, because tiny devices should expose
   fewer capabilities than the broader Social application. Shared Auth remains a
-  separate project, following Social's existing private binding as the reference.
+  separate service, following Social's existing private binding as the reference.
   Reuse Production identities and personal connections; do not create a second
   authentication stack, duplicate provider connections, or move app behavior into
   shared Auth. See [voice replies](voice-replies.md) for controls and recovery.

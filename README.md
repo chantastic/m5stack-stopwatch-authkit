@@ -10,7 +10,7 @@ Saved profiles load before networking starts. In the latest hardware check, all 
 
 This is firmware for a personal device, currently configured for chan.dev's **Production Devices** AuthKit application and the existing `https://auth.chan.dev` service. The public client ID is intentionally in the source; passwords, client secrets, and provider tokens are not.
 
-Shared authentication and Pipes are maintained in the separate **auth.chan.dev** project. This repository also contains the focused **Devices gateway** in `gateway/`, which uses a private binding to that existing service. Building the firmware does not create another AuthKit application, configure providers, or deploy the gateway. A clean build still targets the existing chan.dev environment. See [architecture](docs/architecture.md) for the service contract and [privacy](docs/privacy.md) for storage and credential handling.
+Auth, Social, and Devices service source and deployments are now maintained in the private [chan-services monorepo](https://github.com/chantastic/chan-services). Active gateway source is `~/Developer/chan-services/apps/devices`; its `docs/deployment.md` records production ownership. The `gateway/` directory here is a historical snapshot retained with the firmware's release history; use the monorepo for gateway changes and deployments. Building this firmware does not create another AuthKit application, configure providers, or deploy a service. A clean build still targets the existing chan.dev environment. See [architecture](docs/architecture.md) for the service contract and [privacy](docs/privacy.md) for storage and credential handling.
 
 ## Hardware and controls
 

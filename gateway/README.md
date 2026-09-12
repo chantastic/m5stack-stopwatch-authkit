@@ -1,7 +1,14 @@
-# Devices gateway
+# Devices gateway — historical snapshot
 
-This Worker serves the StopWatch voice reply app at `https://devices.chan.dev`.
-It belongs to this device project. Auth remains the shared identity service:
+Active source and production deployment ownership have moved to
+`~/Developer/chan-services/apps/devices` in private
+[chantastic/chan-services](https://github.com/chantastic/chan-services).
+Use that monorepo's `docs/deployment.md` and workspace README for gateway work.
+This directory is preserved with the original firmware release history. Do not
+implement gateway changes or deploy from this copy.
+
+The snapshot below records the Worker serving the StopWatch voice reply app at
+`https://devices.chan.dev`. Auth remains the shared identity service:
 there is no new WorkOS application, no copied AuthKit implementation, and no
 migration of the existing badge/profile endpoints.
 
@@ -13,7 +20,7 @@ reply policy, quotas, and durable send receipts. It has no WorkOS SDK, WorkOS
 secret, provider key in configuration, cookie login, public credential endpoint,
 or arbitrary provider proxy.
 
-## Development
+## Historical local verification
 
 From this directory, using Node.js 22 or newer:
 
@@ -41,18 +48,15 @@ Do not commit runtime output, audio, device captures, provider responses, or
 private identity logs. `node_modules`, `.dev.vars`, and local Worker state are
 ignored. Normal tests require no credentials or live provider traffic.
 
-Deployment is an explicit operation:
+The retained `deploy` script still targets the live Worker. Do not run it from
+this historical snapshot; releases belong to the canonical monorepo's scoped
+Devices workflow.
 
-```sh
-npm run deploy
-```
-
-`wrangler.jsonc` names `chan-devices`, uses a custom domain, disables workers.dev
-and preview URLs, and creates the SQLite-backed `ReplyLedger` Durable Object with
-the `v1` migration. The private Auth entrypoint must be deployed first. This is
-one intentionally configured Production deployment, not an implicit staging
-service. Review the account/domain before running deployment; the firmware
-continues to use `auth.chan.dev` for its existing badge APIs.
+The retained `wrangler.jsonc` records the original Production configuration:
+`chan-devices`, its custom domain, disabled workers.dev and preview URLs, and the
+SQLite-backed `ReplyLedger` with the `v1` migration. The original release required
+the private Auth entrypoint first. Current releases use the canonical monorepo.
+The firmware continues to use `auth.chan.dev` for its existing badge APIs.
 
 ## Public HTTP contract
 

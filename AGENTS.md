@@ -17,12 +17,17 @@
 ## Established constraints
 
 - Active firmware is the Arduino sketch in `firmware/devices_badge/`.
+- Active gateway source is `/Users/chan/Developer/chan-services/apps/devices`.
+  The private `chantastic/chan-services` monorepo owns service deployments; read
+  its `docs/deployment.md` before gateway work. `gateway/` here and the standalone
+  `../devices.chan.dev` repository are retained historical snapshots. Do not
+  implement or deploy gateway changes from those copies. Firmware stays here.
 - This prototype intentionally connects to the existing chan.dev Production
   Devices application. Any signed-in Production user uses their own account and
-  personal connections. Shared authentication and Pipes live in a separate
-  repository; the narrow Devices gateway lives in `gateway/` here. Follow the
-  existing Social-to-Auth private binding pattern. Do not build a separate
-  authentication stack or move device workflows into Auth or Social.
+  personal connections. Shared Auth, Pipes integration, Social and the narrow
+  Devices gateway share the services monorepo but retain separate Workers and
+  private bindings. Do not build a separate authentication stack or move device
+  workflows into Auth or Social.
 - Hardware is an M5Stack **StopWatch**, ESP32-S3 with 16 MiB flash and 8 MiB OPI
   PSRAM. Use the pinned build configuration; do not trust USB board-name guesses.
 - Keep public client IDs and HTTPS endpoint configuration separate from secrets.

@@ -30,8 +30,11 @@ ArduinoJson include directory described in the README. Generated scheduler
 fixtures and source hashes are disposable outputs, not source files to edit.
 
 The voice reply app is part of the same sketch and uses the same build/flash
-scripts and partition layout. [`gateway/`](../gateway/) is a separate service;
-compiling firmware does not deploy it. See [voice-replies.md](voice-replies.md)
+scripts and partition layout. Active gateway development and deployment use
+`~/Developer/chan-services/apps/devices`; read that monorepo's `AGENTS.md` and
+`docs/deployment.md`. [`gateway/`](../gateway/) here and the standalone
+`~/Developer/devices.chan.dev` are historical source snapshots, not release
+sources. Compiling firmware does not deploy a service. See [voice-replies.md](voice-replies.md)
 for the service boundary, current contract, and separately dated integration
 evidence.
 

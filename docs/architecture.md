@@ -13,7 +13,7 @@ flowchart LR
   Badge <-->|Public profiles and pixels| Cache[Local flash cache]
 ```
 
-Shared Auth, provider OAuth applications, and WorkOS configuration are maintained outside this repository. The existing badge contract remains there. The voice reply app adds a narrow companion Worker in this repository's `gateway/`, at `devices.chan.dev`, using the separate Auth service's private `DevicesIdentity` binding. It follows the existing Social-to-Auth injected adapter pattern without moving device workflows into Social or duplicating authentication. Building firmware does not deploy either service. See [voice replies](voice-replies.md) for the new flow and verification status.
+Active service source is maintained outside this firmware repository, in the private `chantastic/chan-services` monorepo. The gateway is at `~/Developer/chan-services/apps/devices`, serving `devices.chan.dev` through the separate Auth Worker's private `DevicesIdentity` binding. Auth and Social share that monorepo while retaining their own deployment and security boundaries. The local `gateway/` directory is a historical source snapshot; do not edit or deploy it as the active service. Building firmware does not deploy any service. See [voice replies](voice-replies.md) for the flow and verification status, and the monorepo's `docs/deployment.md` for current release ownership.
 
 ## Source map
 
@@ -37,7 +37,7 @@ All paths below are relative to `firmware/devices_badge/`.
 | `voice_reply.h`, `voice_reply_state.h` | Reply app, hold gesture, explicit-send gate, saved receipt recovery |
 | `voice_reply_ui.h` | Round-screen paginated inbox, recording, transcript review, and status views |
 
-The companion `gateway/` owns provider requests, usage limits, sender/target
+The canonical `chan-services/apps/devices` gateway owns provider requests, usage limits, sender/target
 validation, and durable reply receipts. Shared Auth owns token verification,
 fresh session checks, personal workspace resolution, and narrowly approved
 private Pipes credential access. The gateway has no WorkOS environment secret
